@@ -6,11 +6,10 @@ use std::hash::{Hash, Hasher};
 
 pub fn winnow(input: &str, window: u32) -> Vec<(u64, u64)> {
     let input = clean(input);
-    let hash_list = ngram(input.chars(), window)
+    ngram(input.chars(), window)
         .map(|x| x.iter().collect::<String>())
         .map(make_pair)
-        .collect();
-    hash_list
+        .collect()
 }
 
 fn clean(input: &str) -> String {
