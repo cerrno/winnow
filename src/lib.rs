@@ -49,7 +49,6 @@ fn hash<T: Hash>(t: &T) -> u64 {
     s.finish()
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -70,8 +69,10 @@ mod tests {
         let input = "A do run run run";
         let input = clean(input);
         let ngrams = ngram(&input, 5);
-        assert_eq!(ngrams, vec!["adoru", "dorun", "orunr", "runru", "unrun",
-            "nrunr", "runru", "unrun"]);
+        assert_eq!(
+            ngrams,
+            vec!["adoru", "dorun", "orunr", "runru", "unrun", "nrunr", "runru", "unrun"]
+        );
     }
 
     #[test]
