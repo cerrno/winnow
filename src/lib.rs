@@ -79,6 +79,5 @@ mod tests {
     fn test_basic() {
         let input = "A do run run run, a do run run";
         println!("{:?}", winnow(input, 5));
-        assert!(false);
     }
 }
