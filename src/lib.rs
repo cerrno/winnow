@@ -6,7 +6,11 @@ use std::hash::{Hash, Hasher};
 
 pub fn winnow(input: &str, window: u32) -> Vec<(u64, u64)> {
     let input = clean(input);
-    ngram(&input, window).iter().map(make_pair).collect()
+    let hash_list = ngram(input.chars(), window)
+        .map(|x| x.iter().collect::<String>())
+        .map(make_pair)
+        .collect();
+    hash_list
 }
 
 fn clean(input: &str) -> String {
@@ -21,10 +25,12 @@ fn clean(input: &str) -> String {
 // 4-gram example:
 // abcdefgh
 // abcd bcde cdef defg efgh
-fn ngram(input: &str, n: u32) -> Vec<String> {
+fn ngram<I>(mut f: I, n: u32) -> impl Iterator<Item = Vec<I::Item>>
+where
+    I: Iterator + Clone,
+{
     let mut v = vec![];
-    let mut f = input.chars();
-    let mut b = input.chars();
+    let mut b = f.clone();
     for _ in 0..n {
         assert!(b.next().is_some(), "Input size greater than N");
     }
@@ -36,11 +42,11 @@ fn ngram(input: &str, n: u32) -> Vec<String> {
             break;
         }
     }
-    v
+    v.into_iter()
 }
 
-fn make_pair<T: Hash>(input: &T) -> (u64, u64) {
-    (hash(input), 0)
+fn make_pair<T: Hash>(input: T) -> (u64, u64) {
+    (hash(&input), 0)
 }
 
 fn hash<T: Hash>(t: &T) -> u64 {
@@ -63,14 +69,21 @@ mod tests {
     #[test]
     fn test_ngram() {
         let input = "abcdefgh";
-        let ngrams = ngram(&input, 4);
-        assert_eq!(ngrams, vec!["abcd", "bcde", "cdef", "defg", "efgh"]);
+        let ngrams = ngram(input.chars(), 4);
+        assert_eq!(
+            ngrams
+                .map(|x| x.into_iter().collect::<String>())
+                .collect::<Vec<String>>(),
+            vec!["abcd", "bcde", "cdef", "defg", "efgh"]
+        );
 
         let input = "A do run run run";
         let input = clean(input);
-        let ngrams = ngram(&input, 5);
+        let ngrams = ngram(input.chars(), 5);
         assert_eq!(
-            ngrams,
+            ngrams
+                .map(|x| x.into_iter().collect::<String>())
+                .collect::<Vec<String>>(),
             vec!["adoru", "dorun", "orunr", "runru", "unrun", "nrunr", "runru", "unrun"]
         );
     }
