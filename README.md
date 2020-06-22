@@ -1,6 +1,6 @@
 Winnowing
 =========
-[![build](https://github.com/schuermannator/winnow/workflows/rust/badge.svg)](https://github.com/schuermannator/winnow/actions)
+[![build](https://github.com/schuermannator/winnow/workflows/build/badge.svg)](https://github.com/schuermannator/winnow/actions)
 
 [Link to paper][winnowing]
 
