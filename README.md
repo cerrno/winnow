@@ -1,8 +1,6 @@
 Winnowing
 =========
-![build](https://github.com/schuermannator/winnow/workflows/rust/badge.svg)
-
-Winnowing algorithm for document fingerprinting in Rust.
+[![build](https://github.com/schuermannator/winnow/workflows/rust/badge.svg)](https://github.com/schuermannator/winnow/actions)
 
 [Link to paper][winnowing]
 
