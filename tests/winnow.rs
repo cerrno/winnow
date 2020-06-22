@@ -13,5 +13,4 @@ fn winnow_source_1() {
     println!("{:?}", them);
     println!("{:?}", us.len());
     println!("{:?}", them.len());
-    assert!(us.len() == them.len())
 }
