@@ -22,6 +22,11 @@ Detector
 > falls below some user-specified threshold.
 
 ## Our Detection
+- Preprocessing
+> "It does this by preprocessing the source code files, calculating a numeric fingerprint for each file, and then performing a longest common sequence search on the two fingerprints. The preprocessing stage replaces all function and variable names with a single token, and removes all comments and whitespace from the source code. The fingerprint stage calculates hash values for windows of characters in the resulting file, preserving the lowest hash values as the file’s fingerprint" Engels et al. 2007
+1. Remove comments and whitespace
+2. Tokenize and replace function names, syntax decorators, and variable names
+
 - Positional information (file/line number/commit) stored with each fingerprint
 1. First step builds map from fingerprints => locations for all documents
 (inverted index)
