@@ -2,6 +2,7 @@ Detector
 ========
 
 ## Winnowing paper
+[Link to paper][winnowing-paper]  
 > For this application, positional information (document and line number) is
 > stored with each selected fingerprint. The first step builds an index mapping
 > fingerprints to locations for all documents, much like the inverted index
@@ -23,7 +24,13 @@ Detector
 
 ## Our Detection
 - Preprocessing
-> "It does this by preprocessing the source code files, calculating a numeric fingerprint for each file, and then performing a longest common sequence search on the two fingerprints. The preprocessing stage replaces all function and variable names with a single token, and removes all comments and whitespace from the source code. The fingerprint stage calculates hash values for windows of characters in the resulting file, preserving the lowest hash values as the file’s fingerprint" Engels et al. 2007
+> "It does this by preprocessing the source code files, calculating a numeric
+> fingerprint for each file, and then performing a longest common sequence
+> search on the two fingerprints. The preprocessing stage replaces all function
+> and variable names with a single token, and removes all comments and
+> whitespace from the source code. The fingerprint stage calculates hash values
+> for windows of characters in the resulting file, preserving the lowest hash
+> values as the file’s fingerprint" [Engels et al. 2007][engels-paper]
 1. Remove comments and whitespace
 2. Tokenize and replace function names, syntax decorators, and variable names
 
@@ -49,3 +56,7 @@ user)
 1. Why fingerprint a second time in step (2)?
 2. How to define our 'global location' (file/line-number/commit?)
 3. How to select winnowing window size/ngram size? (I think it discusses in the paper)
+4. Why to tokenize/replace function names etc. for preprocessing?
+
+[engels-paper]: TODO
+[winnowing-paper]: https://theory.stanford.edu/~aiken/publications/papers/sigmod03.pdf

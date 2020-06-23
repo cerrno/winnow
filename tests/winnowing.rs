@@ -1,4 +1,4 @@
-use winnow::winnow;
+use winnow::winnowing::winnow;
 
 use std::fs::read_to_string;
 

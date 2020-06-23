@@ -3,12 +3,7 @@ use std::io;
 use std::path::Path;
 use std::process::Command;
 
-#[derive(PartialEq, Default, Clone, Debug)]
-struct Commit {
-    hash: String,
-    message: String,
-    diff: String,
-}
+use winnow::parser::parse_patch;
 
 struct Repo {
     name: String,
@@ -44,6 +39,13 @@ impl Repo {
         }
         Ok(())
     }
+
+    /*
+    fn patches(&mut self) -> io::Result<()> {
+        let start = empty_tree_hash()?;
+        self.patches_since(&start)
+    }
+    */
 
     // generate all patches since start_hash commit
     fn patches_since(&mut self, start_hash: &str) -> io::Result<()> {
@@ -81,14 +83,17 @@ fn empty_tree_hash() -> io::Result<String> {
 fn main() -> io::Result<()> {
     // start at either empty tree (beginning) or specified hash
     let args: Vec<String> = env::args().collect();
-    let start_hash = match args.len() {
-        1 => empty_tree_hash()?,
-        2 => args[1].clone(),
+    let (repo, start_hash) = match args.len() {
+        2 => (args[1].clone(), empty_tree_hash()?),
+        3 => (args[1].clone(), args[2].clone()),
         _ => panic!("Invalid number of arguments"),
     };
 
-    let mut repo = Repo::new("git@github.com:schuermannator/sph.git")?;
+    let mut repo = Repo::new(&repo)?;
     repo.patches_since(&start_hash)?;
-    println!("{:?}", repo.patches);
+    // println!("{:?}", repo.patches);
+    for p in repo.patches {
+        parse_patch(p);
+    }
     Ok(())
 }
