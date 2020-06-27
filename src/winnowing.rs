@@ -1,4 +1,5 @@
 use std::collections::hash_map::DefaultHasher;
+use std::fs;
 use std::hash::{Hash, Hasher};
 use unidiff::{Line, PatchSet};
 
@@ -28,7 +29,7 @@ pub fn winnow(commit: PatchSet, commit_hash: &str) -> Vec<Fingerprint> {
 
 fn winnow_line(line: Line) -> Vec<(u64, usize)> {
     let n = line.target_line_no.unwrap(); // should have target_line_no since it came from target_lines
-    let hashes = winnow_str(&line.value, 50);
+    let hashes = winnow_str(&line.value, 5);
     hashes.into_iter().map(|h| (h, n)).collect()
 }
 
@@ -40,6 +41,16 @@ fn winnow_str(input: &str, window: u32) -> Vec<u64> {
     // lul fix this
     let hashes = ngram_hash_iter.collect::<Vec<u64>>();
     ngram(hashes.into_iter(), window).map(select_hash).collect()
+}
+
+pub fn parse_patch(path: &str) -> Vec<Fingerprint> {
+    let patch = fs::read_to_string(path).unwrap();
+    let mut patchset = PatchSet::new();
+    if let Err(e) = patchset.parse(&patch) {
+        println!("{:?}", e);
+        return vec![];
+    }
+    winnow(patchset, &patch)
 }
 
 fn add_file(incompletes: Vec<(u64, usize)>, file: &str) -> Vec<(u64, usize, String)> {
@@ -97,7 +108,10 @@ where
     let mut v = vec![];
     let mut b = f.clone();
     for _ in 0..n {
-        assert!(b.next().is_some(), "Input size smaller than N");
+        // assert!(b.next().is_some(), "Input size smaller than N");
+        if b.next().is_none() {
+            return v.into_iter();
+        }
     }
     loop {
         let ngram = f.clone().take(n as usize).collect();
@@ -132,6 +146,7 @@ fn hash<T: Hash>(t: &T) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use fs::read_to_string;
 
     #[test]
     fn test_clean() {
@@ -150,6 +165,19 @@ mod tests {
                 .collect::<Vec<String>>(),
             vec!["adoru", "dorun", "orunr", "runru", "unrun", "nrunr", "runru", "unrun"]
         );
+    }
+
+    #[test]
+    fn test_scheme() {
+        let winnow_size = 50;
+        let us = read_to_string("tests/data/play.scm").unwrap();
+        let them = read_to_string("tests/data/play1.scm").unwrap();
+        let us = winnow_str(&us, winnow_size);
+        let them = winnow_str(&them, winnow_size);
+        println!("{:?}", us);
+        println!("{:?}", them);
+        println!("{:?}", us.len());
+        println!("{:?}", them.len());
     }
 
     // #[test]

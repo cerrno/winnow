@@ -4,8 +4,7 @@ use std::io;
 use std::path::Path;
 use std::process::Command;
 
-use winnow::parser::parse_patch;
-use winnow::winnowing::Fingerprint;
+use winnow::winnowing::{parse_patch, Fingerprint};
 
 struct Repo {
     name: String,
@@ -33,10 +32,8 @@ impl Repo {
             .arg(&self.path)
             .output()?;
         if clone_cmd.status.code().unwrap() == 128 {
-            println!("{:?}", clone_cmd);
             println!("repo {} already exists", self.path);
         } else if !clone_cmd.status.success() {
-            println!("{}", clone_cmd.status);
             panic!("cannot clone repo {}", self.path);
         }
         Ok(())
@@ -62,7 +59,10 @@ impl Repo {
             panic!("cannot git format-patch");
         }
         for l in String::from_utf8(git_cmd.stdout).unwrap().lines() {
-            self.patches.push(String::from(l));
+            let mut s = String::from(self.name.clone());
+            s.push_str("/");
+            s.push_str(l);
+            self.patches.push(s);
         }
         Ok(())
     }
