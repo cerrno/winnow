@@ -1,9 +1,11 @@
+use std::collections::HashMap;
 use std::env;
 use std::io;
 use std::path::Path;
 use std::process::Command;
 
 use winnow::parser::parse_patch;
+use winnow::winnowing::Fingerprint;
 
 struct Repo {
     name: String,
@@ -48,7 +50,7 @@ impl Repo {
     */
 
     // generate all patches since start_hash commit
-    fn patches_since(&mut self, start_hash: &str) -> io::Result<()> {
+    fn make_patches_since(&mut self, start_hash: &str) -> io::Result<()> {
         let git_cmd = Command::new("git")
             .arg("format-patch")
             .arg("-k")
@@ -63,6 +65,15 @@ impl Repo {
             self.patches.push(String::from(l));
         }
         Ok(())
+    }
+
+    fn parse_patches(&self) -> Vec<Fingerprint> {
+        // self.patches.into_iter().map(parse_patch).collect()
+        let mut out = vec![];
+        for p in self.patches.to_owned() {
+            out.append(&mut parse_patch(&p));
+        }
+        out
     }
 }
 
@@ -89,11 +100,14 @@ fn main() -> io::Result<()> {
         _ => panic!("Invalid number of arguments"),
     };
 
+    let mut fingerprint_map = HashMap::new();
+
+    // loop through repos to generate tons of fingerprints
     let mut repo = Repo::new(&repo)?;
-    repo.patches_since(&start_hash)?;
-    // println!("{:?}", repo.patches);
-    for p in repo.patches {
-        parse_patch(p);
-    }
+    repo.make_patches_since(&start_hash)?; // dumps to disk
+    let fingerprints = &repo.parse_patches();
+
+    fingerprint_map.insert(repo.name, fingerprints);
+
     Ok(())
 }

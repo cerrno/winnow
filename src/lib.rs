@@ -7,5 +7,5 @@
     missing_debug_implementations
 )]
 
-pub mod winnowing;
 pub mod parser;
+pub mod winnowing;
