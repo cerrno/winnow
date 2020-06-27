@@ -1,5 +1,16 @@
-Detector
-========
+# Winnow
+
+## Our approach
+We desire to detect similar code between files in different git repositories over the set of all commits. That is, we wish to be able to identify if there is shared code between any two files in any two _different_ repositories across all commits in those repositories.
+
+Definitions:
+- A _document_ is a set of additive changes corresponding to a hunk in a diff for a particular file in a git repository. A git repository contains a set of commits, each of which contain a number of files, themselves containing a number of _hunks_, or individual sets of changes. These additive subset of all _hunks_ in all files in all commits gives the set of all _documents_ in a repository.
+- A _location_ uniquely identifies the line number of a _fingerprint_ in a _document_, given by the tuple `(repository, filename, commit hash, line number)`.
+- A _fingerprint_ is a hash resulting from the application of the [winnowing][winnowing-paper] algorithm to subset (_window_) of a specific _document_. _Fingerprints_ are always associated with the _documents_ they derive from by means of their _location_.
+
+1. Load the set of all _documents_
+    - 
+2. Test
 
 ## Winnowing paper
 [Link to paper][winnowing-paper]  
@@ -22,7 +33,7 @@ Detector
 > optimize it by never materializing the matching for a pair of documents if it
 > falls below some user-specified threshold.
 
-## Our Detection
+## Others
 - Preprocessing
 > "It does this by preprocessing the source code files, calculating a numeric
 > fingerprint for each file, and then performing a longest common sequence
@@ -31,32 +42,7 @@ Detector
 > whitespace from the source code. The fingerprint stage calculates hash values
 > for windows of characters in the resulting file, preserving the lowest hash
 > values as the file’s fingerprint" [Engels et al. 2007][engels-paper]
-1. Remove comments and whitespace
-2. Tokenize and replace function names, syntax decorators, and variable names
 
-- Positional information (file/line number/commit) stored with each fingerprint
-1. First step builds map from fingerprints => locations for all documents
-(inverted index)
-2. Each document is fingerprinted a second time (**why?**) and the selected fingerprints
-are looked up in the index
-    - now have a list of all matching fingerprints for each document
-    - list of matching fingerprints for a document d may contain fingerprints
-      from many other docs d1, d2, ...
-3. List of matching fingerprints for each doc d is sorted by document and the
-matches for each pair of docs (d, d1), (d, d2), ... is formed. Matched b/w docs
-are rank-ordered by size (number of fingerprints) (largest matched reported to
-user)
-    - Up until step (3), no condsideration of pairs of docs is required
-      (O(N^2)).
-    - By postponing the quadratic computation to the last step, we can
-      optimize it by never materializing the matching for a pair of documents if it
-      falls below some user-specified threshold.
 
-## Questions
-1. Why fingerprint a second time in step (2)?
-2. How to define our 'global location' (file/line-number/commit?)
-3. How to select winnowing window size/ngram size? (I think it discusses in the paper)
-4. Why to tokenize/replace function names etc. for preprocessing?
-
-[engels-paper]: TODO
+[engels-paper]: https://dl.acm.org/doi/pdf/10.1145/1227310.1227324
 [winnowing-paper]: https://theory.stanford.edu/~aiken/publications/papers/sigmod03.pdf
