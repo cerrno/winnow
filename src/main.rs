@@ -59,7 +59,7 @@ impl Repo {
             panic!("cannot git format-patch");
         }
         for l in String::from_utf8(git_cmd.stdout).unwrap().lines() {
-            let mut s = String::from(self.name.clone());
+            let mut s = self.name.clone();
             s.push_str("/");
             s.push_str(l);
             self.patches.push(s);
