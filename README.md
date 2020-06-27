@@ -61,7 +61,7 @@ Definitions:
 > falls below some user-specified threshold.
 
 ### Others
-- Preprocessing
+#### Preprocessing
 > "It does this by preprocessing the source code files, calculating a numeric
 > fingerprint for each file, and then performing a longest common sequence
 > search on the two fingerprints. The preprocessing stage replaces all function
