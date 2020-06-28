@@ -62,6 +62,21 @@ Definitions:
 > optimize it by never materializing the matching for a pair of documents if it
 > falls below some user-specified threshold.
 
+> Presentation of the results is another important issue for users. Statistics
+> such as reporting the percentage of overlap between two documents are useful,
+> but not nearly as useful as actually showing the matches marked-up in the
+> original text. MOSS uses the fingerprints to determine where the longest
+> matching sequences are; in particular, if a1 in document 1 matches a2 in
+> document 2, and b1 in document 1 matches b2 in document 2, and furthermore a1
+> and b1 are consecutive in document 1 and a2 and b2 are consecutive in
+> document 2, then we have discovered a longer match across documents
+> consisting of a followed by b. While this merging of matches is easy to
+> implement, k-grams are naturally coarse and some of the match is usually lost
+> at the beginning and the end of the match. It is possible that once a pair of
+> similar documents are detected using fingerprinting that it would be better
+> to use a suffix-tree algorithm [\[15\]][suffix-tree] to find maximal matches
+> in just that pair of documents.
+
 ### Others
 #### Preprocessing
 > "It does this by preprocessing the source code files, calculating a numeric
@@ -75,3 +90,4 @@ Definitions:
 [moss]: https://theory.stanford.edu/~aiken/moss/
 [engels-paper]: https://dl.acm.org/doi/pdf/10.1145/1227310.1227324
 [winnowing-paper]: https://theory.stanford.edu/~aiken/publications/papers/sigmod03.pdf
+[suffix-tree]: https://www.cs.helsinki.fi/u/ukkonen/SuffixT1withFigs.pdf
