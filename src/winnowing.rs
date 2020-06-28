@@ -3,7 +3,7 @@ use std::fs;
 use std::hash::{Hash, Hasher};
 use unidiff::{Line, PatchSet};
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Fingerprint {
     pub hash: u64,
     pub location: Location,

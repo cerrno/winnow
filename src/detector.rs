@@ -2,6 +2,13 @@ use crate::winnowing::{Fingerprint, Location};
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
+struct DetectorPair<'a> {
+    a: &'a Document,
+    b: &'a Document,
+    fingerprints: Vec<Fingerprint>,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash)]
 struct Document {
     repo: String,
     commit: [u8; 20],
@@ -9,27 +16,45 @@ struct Document {
 }
 
 pub fn run(repo_map: HashMap<String, Vec<Fingerprint>>) {
-    // step 1: construct inverted index
-    let mut inverted_index: HashMap<u64, Vec<Location>> = HashMap::new();
-    for fingerprints in repo_map.values() {
+    // step 0: construct document map
+    let mut doc_map: HashMap<Document, Vec<Fingerprint>> = HashMap::new();
+    for (repo, fingerprints) in repo_map {
         for f in fingerprints {
-            let fingerprint_vec = inverted_index.entry(f.hash).or_insert_with(Vec::new);
-            fingerprint_vec.push(f.location.clone());
+            doc_map
+                .entry(Document {
+                    repo: repo.clone(),
+                    commit: f.location.commit.clone(),
+                    file: f.location.file.clone(),
+                })
+                .or_insert_with(Vec::new)
+                .push(f);
         }
     }
-    for i in inverted_index.iter().take(10) {
-        println!("{:?}", i);
+    println!("Done generating doc_map");
+
+    // step 1: construct inverted index
+    let mut inverted_index: HashMap<u64, Vec<Fingerprint>> = HashMap::new();
+    for fingerprints in doc_map.values() {
+        for f in fingerprints {
+            let fingerprint_vec = inverted_index.entry(f.hash).or_insert_with(Vec::new);
+            fingerprint_vec.push(f.clone());
+        }
     }
-    println!("{}", inverted_index.keys().len());
+    println!(
+        "Done generating inverted_index; len: {}",
+        inverted_index.keys().len()
+    );
 
     // step 2: construct map from my_locations -> matched_locations
     let mut location_map: HashMap<Location, Vec<Location>> = HashMap::new();
-    for (repo, fingerprints) in &repo_map {
+    for (doc, fingerprints) in &doc_map {
         for f in fingerprints {
-            let matched_locations = inverted_index.get(&f.hash).unwrap();
-            let popularity = matched_locations
+            let matched_fingerprints = inverted_index.get(&f.hash).unwrap();
+            let popularity = matched_fingerprints
                 .iter()
-                .filter(|&location| location.repo == *repo)
+                .filter(|&match_fp| {
+                    match_fp.location.repo == *doc.repo && match_fp.location.file == *doc.file
+                })
                 .count();
             // decide if this is an interesting case or not
             if popularity > 0 && popularity < 1000 {
@@ -42,57 +67,42 @@ pub fn run(repo_map: HashMap<String, Vec<Fingerprint>>) {
     }
 
     // step 3: O(N^2) comparison
-    // for (_, v) in location_map {
-    // println!("{:?}", v.len());
-    // }
-    // naive way to get set of all 'documents' from inverted index
-    let documents = inverted_index.values().clone().flatten().map(
-        |Location {
-             repo,
-             commit,
-             file,
-             line: _,
-         }| Document { repo: repo.clone(), commit: commit.clone(), file: file.clone() },
-    );
-    // for each 'document' in documents
-    // (d1, d2) => [match1, match2, ...]
-    let mut pairs = HashMap::new();
-    for Document {repo, commit, file} in documents {
-        // for each doc's locations => matched_locations
-        let mut all_matched = vec![];
-        for (my_location, matched_locations) in location_map.iter().filter(
-            |(
-                Location {
-                    repo: r,
-                    commit: c,
-                    file: f,
-                    line: _,
-                },
-                _,
-            )| &repo == r && &commit == c && &file == f,
-        ) {
-            for matched in matched_locations {
-                all_matched.push((my_location, matched));
+    let mut documents = doc_map.keys();
+    // pairs are (doc_a, doc_b, [match1, match2, ...])
+    let mut detected_pairs = vec![];
+    // fixme get rid of clone
+    for (i, doc1) in documents.clone().enumerate() {
+        for doc2 in documents.nth(i + 1).iter() {
+            // consider pair (doc1, doc2)
+            println!("({:x?}, {:x?})\n", doc1, doc2);
+            // matched fingerprints
+            let mut fingerprints: Vec<Fingerprint> = vec![];
+            // get this doc's fingerprints and look them up in the index
+            for f in doc_map.get(doc1).unwrap() {
+                let mut match_fingerprints = inverted_index
+                    .get(&f.hash)
+                    .unwrap()
+                    .iter()
+                    .cloned()
+                    .filter(|fp| from_same_doc(doc2, fp))
+                    .collect();
+                fingerprints.append(&mut match_fingerprints);
             }
-        }
-        // println!("{:?}", all_matched.iter().take(10));
-        for (me, matched) in all_matched.into_iter().take(100) {
-            // (d, dx) => vec matched
-            pairs
-                .entry((
-                    Document { repo: me.repo.clone(), commit: me.commit, file: me.file.clone()},
-                    Document { repo: matched.repo.clone(), commit: matched.commit, file: matched.file.clone()},
-                ))
-                .or_insert_with(Vec::new)
-                .push(matched);
+            detected_pairs.push(DetectorPair {
+                a: doc1,
+                b: doc2,
+                fingerprints,
+            });
         }
     }
-    let mut ranks: Vec<(
-        &(Document, Document),
-        usize,
-    )> = pairs.iter().map(|(k, v)| (k.clone(), v.len())).collect();
-    ranks.sort_by(|a, b| a.1.cmp(&b.1));
-    for r in ranks {
-        println!("{:?}\n", r);
+    // sort document pairs by number of matched fingerprints
+    detected_pairs.sort_by(|a, b| b.fingerprints.len().cmp(&a.fingerprints.len()));
+    println!("\nDETECTED PAIRS: \n\n");
+    for p in detected_pairs.iter().take(10) {
+        println!("{:x?}\n", p);
     }
+}
+
+fn from_same_doc(d: &Document, f: &Fingerprint) -> bool {
+    d.repo == f.location.repo && d.commit == f.location.commit && d.file == f.location.file
 }
