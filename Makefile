@@ -1,11 +1,11 @@
 test:
 	cargo t --verbose
 
-check:
-	cargo check
+lint:
+	cargo clean
+	cargo clippy -- -D warnings
 	cargo fmt -- --check
-	cargo clippy 
 
-.PHONY: test check
+.PHONY: test lint
 
 

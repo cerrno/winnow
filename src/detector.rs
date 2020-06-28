@@ -23,7 +23,7 @@ pub fn run(repo_map: HashMap<String, Vec<Fingerprint>>) {
             doc_map
                 .entry(Document {
                     repo: repo.clone(),
-                    commit: f.location.commit.clone(),
+                    commit: f.location.commit,
                     file: f.location.file.clone(),
                 })
                 .or_insert_with(Vec::new)
