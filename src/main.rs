@@ -72,7 +72,7 @@ impl Repo {
         // self.patches.into_iter().map(parse_patch).collect()
         let mut out = vec![];
         for p in self.patches.to_owned() {
-            out.append(&mut parse_patch(&p));
+            out.append(&mut parse_patch(&p, &self.name));
         }
         out
     }

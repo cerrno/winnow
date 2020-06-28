@@ -6,12 +6,18 @@ use unidiff::{Line, PatchSet};
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Fingerprint {
     pub hash: u64,
+    pub location: Location,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Location {
+    pub repo: String,
     pub commit: [u8; 20],
     pub file: String,
     pub line: usize,
 }
 
-pub fn winnow(commit: PatchSet, commit_hash: [u8; 20]) -> Vec<Fingerprint> {
+pub fn winnow(commit: PatchSet, commit_hash: [u8; 20], repo: &str) -> Vec<Fingerprint> {
     let mut hash_line_file = vec![];
     for patchfile in commit {
         let mut hash_and_line = vec![];
@@ -24,7 +30,7 @@ pub fn winnow(commit: PatchSet, commit_hash: [u8; 20]) -> Vec<Fingerprint> {
         let mut v = add_file(hash_and_line, file);
         hash_line_file.append(&mut v);
     }
-    make_fingerprints(hash_line_file, commit_hash)
+    make_fingerprints(hash_line_file, commit_hash, repo.to_owned())
 }
 
 fn winnow_line(line: Line) -> Vec<(u64, usize)> {
@@ -52,7 +58,7 @@ fn decode_hex(s: &str) -> Result<Vec<u8>, ParseIntError> {
         .collect()
 }
 
-pub fn parse_patch(path: &str) -> Vec<Fingerprint> {
+pub fn parse_patch(path: &str, repo: &str) -> Vec<Fingerprint> {
     let patch = fs::read_to_string(path).unwrap();
     let mut patchset = PatchSet::new();
     if let Err(e) = patchset.parse(&patch) {
@@ -66,7 +72,7 @@ pub fn parse_patch(path: &str) -> Vec<Fingerprint> {
     for (i, v) in commit_hash.unwrap().into_iter().enumerate() {
         a[i] = v;
     }
-    winnow(patchset, a)
+    winnow(patchset, a, repo)
 }
 
 fn add_file(incompletes: Vec<(u64, usize)>, file: &str) -> Vec<(u64, usize, String)> {
@@ -79,14 +85,18 @@ fn add_file(incompletes: Vec<(u64, usize)>, file: &str) -> Vec<(u64, usize, Stri
 fn make_fingerprints(
     incompletes: Vec<(u64, usize, String)>,
     commit_hash: [u8; 20],
+    repo: String,
 ) -> Vec<Fingerprint> {
     incompletes
         .into_iter()
         .map(|(hash, line, file)| Fingerprint {
             hash,
-            commit: commit_hash,
-            line,
-            file,
+            location: Location {
+                repo: repo.clone(),
+                commit: commit_hash,
+                line,
+                file,
+            },
         })
         .collect()
 }
