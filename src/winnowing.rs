@@ -9,7 +9,7 @@ pub struct Fingerprint {
     pub location: Location,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Location {
     pub repo: String,
     pub commit: [u8; 20],
