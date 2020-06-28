@@ -199,7 +199,6 @@ mod tests {
     #[test]
     fn test_basic() {
         let input = "A do run run run, a do run run";
-        // println!("{:?}", winnow(input, 5));
         let output = winnow_str(input, 5);
         let expected = vec![
             4020085029674966483,

@@ -21,10 +21,10 @@ pub fn run(repo_map: HashMap<String, Vec<Fingerprint>>) {
     let mut inverted_index: HashMap<u64, HashMap<String, Vec<RepoLocation>>> = HashMap::new();
     for (repo, fingerprints) in &repo_map {
         for f in fingerprints {
-            let fingerprint_hash_map = inverted_index.entry(f.hash).or_insert(HashMap::new());
+            let fingerprint_hash_map = inverted_index.entry(f.hash).or_insert_with(HashMap::new);
             let location_vec = fingerprint_hash_map
                 .entry(repo.clone())
-                .or_insert(Vec::new());
+                .or_insert_with(Vec::new);
             location_vec.push(RepoLocation {
                 commit: f.commit,
                 file: f.file.clone(),
@@ -50,7 +50,7 @@ pub fn run(repo_map: HashMap<String, Vec<Fingerprint>>) {
                     commit: f.commit,
                     file: f.file.clone(),
                 };
-                let v = location_map.entry(my_location).or_insert(vec![]);
+                let v = location_map.entry(my_location).or_insert_with(Vec::new);
                 v.push(f);
             }
         }
