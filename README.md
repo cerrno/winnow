@@ -5,5 +5,7 @@ Winnowing
 Software source code similarity detection similar to [Moss][moss]. It is based
 on incremental [winnowing][winnowing] of commits.
 
+Todo: check out https://blog.tonari.no/why-we-love-rust.
+
 [moss]: https://theory.stanford.edu/~aiken/moss/
 [winnowing]: https://theory.stanford.edu/~aiken/publications/papers/sigmod03.pdf
