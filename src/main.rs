@@ -4,6 +4,7 @@ use std::io;
 use std::path::Path;
 use std::process::Command;
 
+use winnow::detector;
 use winnow::winnowing::{parse_patch, Fingerprint};
 
 struct Repo {
@@ -91,23 +92,30 @@ fn empty_tree_hash() -> io::Result<String> {
     Ok(String::from_utf8(hash.stdout).unwrap().trim().to_owned())
 }
 
+/// main will handle external Git-related stuff and make calls to winnow/detect
 fn main() -> io::Result<()> {
     // start at either empty tree (beginning) or specified hash
     let args: Vec<String> = env::args().collect();
-    let (repo, start_hash) = match args.len() {
-        2 => (args[1].clone(), empty_tree_hash()?),
-        3 => (args[1].clone(), args[2].clone()),
+    let (repo1, repo2, start_hash) = match args.len() {
+        3 => (args[1].clone(), args[2].clone(), empty_tree_hash()?),
+        4 => (args[1].clone(), args[2].clone(), args[3].clone()),
         _ => panic!("Invalid number of arguments"),
     };
 
-    let mut fingerprint_map = HashMap::new();
+    let mut fingerprint_map: HashMap<String, Vec<Fingerprint>> = HashMap::new();
 
     // loop through repos to generate tons of fingerprints
-    let mut repo = Repo::new(&repo)?;
+    let mut repo = Repo::new(&repo1)?;
     repo.make_patches_since(&start_hash)?; // dumps to disk
-    let fingerprints = &repo.parse_patches();
-
+    let fingerprints = repo.parse_patches();
     fingerprint_map.insert(repo.name, fingerprints);
+
+    let mut repo = Repo::new(&repo2)?;
+    repo.make_patches_since(&start_hash)?; // dumps to disk
+    let fingerprints = repo.parse_patches();
+    fingerprint_map.insert(repo.name, fingerprints);
+
+    detector::run(fingerprint_map);
 
     Ok(())
 }

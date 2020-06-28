@@ -3,15 +3,15 @@ use std::fs;
 use std::hash::{Hash, Hasher};
 use unidiff::{Line, PatchSet};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Fingerprint {
-    hash: u64,
-    commit: String, // u64,
-    file: String,
-    line: usize,
+    pub hash: u64,
+    pub commit: [u8; 20],
+    pub file: String,
+    pub line: usize,
 }
 
-pub fn winnow(commit: PatchSet, commit_hash: &str) -> Vec<Fingerprint> {
+pub fn winnow(commit: PatchSet, commit_hash: [u8; 20]) -> Vec<Fingerprint> {
     let mut hash_line_file = vec![];
     for patchfile in commit {
         let mut hash_and_line = vec![];
@@ -29,7 +29,7 @@ pub fn winnow(commit: PatchSet, commit_hash: &str) -> Vec<Fingerprint> {
 
 fn winnow_line(line: Line) -> Vec<(u64, usize)> {
     let n = line.target_line_no.unwrap(); // should have target_line_no since it came from target_lines
-    let hashes = winnow_str(&line.value, 5);
+    let hashes = winnow_str(&line.value, 10);
     hashes.into_iter().map(|h| (h, n)).collect()
 }
 
@@ -43,6 +43,15 @@ fn winnow_str(input: &str, window: u32) -> Vec<u64> {
     ngram(hashes.into_iter(), window).map(select_hash).collect()
 }
 
+use std::num::ParseIntError;
+
+fn decode_hex(s: &str) -> Result<Vec<u8>, ParseIntError> {
+    (0..s.len())
+        .step_by(2)
+        .map(|i| u8::from_str_radix(&s[i..i + 2], 16))
+        .collect()
+}
+
 pub fn parse_patch(path: &str) -> Vec<Fingerprint> {
     let patch = fs::read_to_string(path).unwrap();
     let mut patchset = PatchSet::new();
@@ -50,7 +59,14 @@ pub fn parse_patch(path: &str) -> Vec<Fingerprint> {
         println!("{:?}", e);
         return vec![];
     }
-    winnow(patchset, &patch)
+    let commit_hash = patch.split_whitespace().nth(1);
+    println!("{}", commit_hash.unwrap());
+    let commit_hash = decode_hex(commit_hash.unwrap());
+    let mut a = [0; 20];
+    for (i, v) in commit_hash.unwrap().into_iter().enumerate() {
+        a[i] = v;
+    }
+    winnow(patchset, a)
 }
 
 fn add_file(incompletes: Vec<(u64, usize)>, file: &str) -> Vec<(u64, usize, String)> {
@@ -62,13 +78,13 @@ fn add_file(incompletes: Vec<(u64, usize)>, file: &str) -> Vec<(u64, usize, Stri
 
 fn make_fingerprints(
     incompletes: Vec<(u64, usize, String)>,
-    commit_hash: &str,
+    commit_hash: [u8; 20],
 ) -> Vec<Fingerprint> {
     incompletes
         .into_iter()
         .map(|(hash, line, file)| Fingerprint {
             hash,
-            commit: commit_hash.to_owned(),
+            commit: commit_hash,
             line,
             file,
         })
@@ -180,26 +196,26 @@ mod tests {
         println!("{:?}", them.len());
     }
 
-    // #[test]
-    // fn test_basic() {
-    //     let input = "A do run run run, a do run run";
-    //     // println!("{:?}", winnow(input, 5));
-    //     let output = winnow_str(input, 5);
-    //     let expected: Vec<Fingerprint> = vec![
-    //         Fingerprint(4020085029674966483, 3, 0),
-    //         Fingerprint(1468765096528618582, 5, 0),
-    //         Fingerprint(1468765096528618582, 5, 0),
-    //         Fingerprint(1468765096528618582, 5, 0),
-    //         Fingerprint(1468765096528618582, 5, 0),
-    //         Fingerprint(1468765096528618582, 5, 0),
-    //         Fingerprint(2165872647979677269, 8, 0),
-    //         Fingerprint(2165872647979677269, 8, 0),
-    //         Fingerprint(2165872647979677269, 8, 0),
-    //         Fingerprint(2880295526655702587, 9, 0),
-    //         Fingerprint(7536710649711940037, 12, 0),
-    //         Fingerprint(4020085029674966483, 15, 0),
-    //         Fingerprint(4020085029674966483, 15, 0),
-    //     ];
-    //     assert_eq!(output, expected);
-    // }
+    #[test]
+    fn test_basic() {
+        let input = "A do run run run, a do run run";
+        // println!("{:?}", winnow(input, 5));
+        let output = winnow_str(input, 5);
+        let expected = vec![
+            4020085029674966483,
+            1468765096528618582,
+            1468765096528618582,
+            1468765096528618582,
+            1468765096528618582,
+            1468765096528618582,
+            2165872647979677269,
+            2165872647979677269,
+            2165872647979677269,
+            2880295526655702587,
+            7536710649711940037,
+            4020085029674966483,
+            4020085029674966483,
+        ];
+        assert_eq!(output, expected);
+    }
 }
