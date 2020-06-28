@@ -15,27 +15,29 @@ Definitions:
 - A _location_ uniquely identifies the line number of a _fingerprint_ in a _document_, given by the tuple `(repository, filename, commit hash, line number)`.
 - A _fingerprint_ is a hash resulting from the application of the [winnowing][winnowing-paper] algorithm to subset (_window_) of a specific _document_. _Fingerprints_ are always associated with the _documents_ they derive from by means of their _location_.
 
+0. Given a set of repository urls, `minp`, and `maxp`
 1. Load the set of all _documents_
     - Pull all repositories
     - Per repository, read all commits
     - Per commit, read all _hunks_
     - Per _hunk_, do the following
 2. Compute the set of all _fingerprints_
-    - Initialize an empty `vec` of _fingerprints_ and _location_ tuples, `fv`
+    - Initialize an empty vector of _fingerprints_ and _location_ tuples, `fv`
     - Given _hunk_, perform winnowing on the text, giving a set of _fingerprints_
     - Per resulting _fingerprint_, construct a _location_ given the current context of repository, filename (from commit), commit, and line number (from hunk)
     - Store in `fv`
 3. Construct a reverse index on the set of _fingerprints_ `fv`
-    - Initialize an empty `map` of _fingerprint_ hash to `map` from repository name to _location_, `fi`
+    - Initialize an empty nested hashmap of _fingerprint_ hash to hashmap of repository name to _location_, `fi`
     - Per element of `fv`, insert _fingerprint_ into `fi` using hash, repository (from _location_), and _location_ from tuple
 4. Prune set of _fingerprints_
-    - Initialize an empty `map` of `(repository, filename, commit hash)` to `vec` of _fingerprint_ hash, `fd`
+    - Initialize an empty hashmap of `(repository, filename, commit hash)` tuple to vector of _fingerprint_ hash, `fd`
     - Per `key,value` in `fv`, use _fingerprint_ hash (`key`) to query index `fi`
-    - Compute _fingerprint popularity_ `p` from length of the keys of the `value` `map` (the number of unique repositories corresponding to the locations where this _fingerprint_ hash can be found) minus one (discounting the current repository)
-    - If `p` < the _minimum popularity cutoff_, there are not enough matches across the set of _documents_ for this _fingerprint_ to be interesting to identify similarity. If `p` > the _maximum popularity cutoff_, this _fingerprint_ is likely a language keyword, boilerplate code, or something else shared amongst almost all files and/or repositories. In both cases, continue to the next `key,value` pair.
-    - Otherwise, insert element into `fd` using the `value` `map` value (the _location_) and the `key` _fingerprint_ hash.
+    - Compute _fingerprint popularity_ `p` from length of the keys of the `value` (nested) map (the number of unique repositories corresponding to the _locations_ where this _fingerprint_ hash can be found) minus one (discounting the current repository)
+    - If `p` < the minimum _popularity_ cutoff `minp`, there are not enough matches across the set of _documents_ for this _fingerprint_ to be interesting to identify similarity. If `p` > the maximum _popularity_ cutoff `maxp`, this _fingerprint_ is likely a language keyword, boilerplate code, or something else shared amongst almost all files/repositories.
+    - Otherwise, insert element into `fd` using the `value` (nested) map's data to give the _location_ and the `key` _fingerprint_ hash
 5. Perform quadratic (pairwise) _document_ comparison
-    - Initialize an empty 
+    - Initialize an empty output map `out`
+    - 
 
 ## Past work
 
