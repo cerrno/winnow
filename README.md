@@ -36,8 +36,14 @@ Definitions:
     - If `p` < the minimum _popularity_ cutoff `minp`, there are not enough matches across the set of _documents_ for this _fingerprint_ to be interesting to identify similarity. If `p` > the maximum _popularity_ cutoff `maxp`, this _fingerprint_ is likely a language keyword, boilerplate code, or something else shared amongst almost all files/repositories.
     - Otherwise, insert element into `fd` using the `value` (nested) map's data to give the _location_ and the `key` _fingerprint_ hash
 5. Perform quadratic (pairwise) _document_ comparison
-    - Initialize an empty output map `out`
-    - 
+    - Initialize an empty output map of `(document, document)` tuple to vector of _fingerprints_, `out`
+    - Iterate through keys in `fd` as _document_ `a`
+    - Per document _a_, iterate through other keys in `fd` as _document_ `b`
+    - Use `fi` to determine fingerprints existing in both `a` and `b`
+    - Save tuple `(a,b)` and matching _fingerprint_ in map
+6. Return rank-ordered map `out`, sorted by the length of the value (the number of matches for a given pair of _documents_)
+7. Compute useful metrics from `out`
+
 
 ## Past work
 
