@@ -48,7 +48,7 @@ pub fn run(repo_map: HashMap<String, Vec<Fingerprint>>) {
         }
     }
     println!(
-        "Done generating inverted_index; len: {}",
+        "Done generating inverted_index; keys: {}",
         inverted_index.keys().len()
     );
 
@@ -70,6 +70,10 @@ pub fn run(repo_map: HashMap<String, Vec<Fingerprint>>) {
             }
         }
     }
+    println!(
+        "Done generating location_map; keys: {}",
+        location_map.keys().len()
+    );
 
     // step 3: O(N^2) comparison
     let mut documents = doc_map.keys();
@@ -103,7 +107,7 @@ pub fn run(repo_map: HashMap<String, Vec<Fingerprint>>) {
     }
     // sort document pairs by number of matched fingerprints
     detected_pairs.sort_by(|a, b| b.fingerprints.len().cmp(&a.fingerprints.len()));
-    println!("\nDETECTED PAIRS: \n\n");
+    println!("{}", "\nDETECTED PAIRS: \n\n".cyan().bold());
     for p in detected_pairs.iter().take(3) {
         show_pair(p).unwrap();
     }
@@ -117,43 +121,46 @@ fn show_pair(pair: &'_ DetectorPair<'_>) -> std::io::Result<()> {
     let mut d2 = PatchSet::new();
     d2.parse(&p2).unwrap();
 
-    println!(
-        "{}",
-        d1.into_iter()
-            .find(|d| d.target_file == pair.a.file)
-            .expect("couldn't find file")
-            .to_string()
-            .green()
-    );
-    println!("{}", pair.a.hunk_index);
-    println!(
-        "{}",
-        d2.into_iter()
-            .find(|d| d.target_file == pair.b.file)
-            .expect("couldn't find file")
-            .to_string()
-            .red()
-    );
-    println!("{}", pair.b.hunk_index);
     // println!(
     //     "{}",
     //     d1.into_iter()
     //         .find(|d| d.target_file == pair.a.file)
     //         .expect("couldn't find file")
-    //         .into_iter()
-    //         .nth(pair.a.hunk_index)
-    //         .expect("couldn't find hunk")
-    //         .to_string().green()
+    //         .to_string()
+    //         .green()
     // );
+    // println!("{}", pair.a.hunk_index);
     // println!(
     //     "{}",
     //     d2.into_iter()
     //         .find(|d| d.target_file == pair.b.file)
-    //         .unwrap()
-    //         .into_iter()
-    //         .nth(pair.b.hunk_index)
-    //         .unwrap().to_string().red()
+    //         .expect("couldn't find file")
+    //         .to_string()
+    //         .red()
     // );
+    // println!("{}", pair.b.hunk_index);
+    println!(
+        "{}",
+        d1.into_iter()
+            .find(|d| d.target_file == pair.a.file)
+            .expect("couldn't find file")
+            .into_iter()
+            .nth(pair.a.hunk_index)
+            .expect("couldn't find hunk")
+            .to_string()
+            .green()
+    );
+    println!(
+        "{}",
+        d2.into_iter()
+            .find(|d| d.target_file == pair.b.file)
+            .expect("couldn't find file")
+            .into_iter()
+            .nth(pair.b.hunk_index)
+            .expect("couldn't find hunk")
+            .to_string()
+            .red()
+    );
     Ok(())
 }
 

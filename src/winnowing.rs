@@ -90,7 +90,7 @@ pub fn parse_patch(path: &str, repo: &str) -> Vec<Fingerprint> {
 fn add_file(incompletes: Vec<(u64, usize, usize)>, file: &str) -> Vec<(u64, usize, usize, String)> {
     incompletes
         .into_iter()
-        .map(|(hash, hunk_index, line)| (hash, hunk_index, line, file.to_owned()))
+        .map(|(hash, line, hunk_index)| (hash, hunk_index, line, file.to_owned()))
         .collect()
 }
 

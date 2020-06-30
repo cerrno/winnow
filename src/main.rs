@@ -7,6 +7,7 @@ use std::process::Command;
 use winnow::detector;
 use winnow::winnowing::{parse_patch, Fingerprint};
 
+use colored::*;
 use indicatif::ProgressIterator;
 
 struct Repo {
@@ -35,7 +36,7 @@ impl Repo {
             .arg(&self.path)
             .output()?;
         if clone_cmd.status.code().unwrap() == 128 {
-            println!("repo {} already exists", self.path);
+            println!("{}", format!("repo {} already exists", self.path).yellow());
         } else if !clone_cmd.status.success() {
             panic!("cannot clone repo {}", self.path);
         }
