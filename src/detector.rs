@@ -1,8 +1,8 @@
 use crate::winnowing::{Fingerprint, Location};
+use colored::*;
 use std::collections::HashMap;
 use std::fs;
 use unidiff::PatchSet;
-use colored::*;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 struct DetectorPair<'a> {
@@ -104,10 +104,8 @@ pub fn run(repo_map: HashMap<String, Vec<Fingerprint>>) {
     // sort document pairs by number of matched fingerprints
     detected_pairs.sort_by(|a, b| b.fingerprints.len().cmp(&a.fingerprints.len()));
     println!("\nDETECTED PAIRS: \n\n");
-    for p in detected_pairs.iter().take(10) {
-        // println!("{:x?}\n", p);
+    for p in detected_pairs.iter().take(3) {
         show_pair(p).unwrap();
-        break;
     }
 }
 
@@ -124,7 +122,8 @@ fn show_pair(pair: &'_ DetectorPair<'_>) -> std::io::Result<()> {
         d1.into_iter()
             .find(|d| d.target_file == pair.a.file)
             .expect("couldn't find file")
-            .to_string().green()
+            .to_string()
+            .green()
     );
     println!("{}", pair.a.hunk_index);
     println!(
@@ -132,7 +131,8 @@ fn show_pair(pair: &'_ DetectorPair<'_>) -> std::io::Result<()> {
         d2.into_iter()
             .find(|d| d.target_file == pair.b.file)
             .expect("couldn't find file")
-            .to_string().red()
+            .to_string()
+            .red()
     );
     println!("{}", pair.b.hunk_index);
     // println!(

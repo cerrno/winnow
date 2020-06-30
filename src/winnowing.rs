@@ -19,7 +19,12 @@ pub struct Location {
     pub line: usize,
 }
 
-pub fn winnow(commit: PatchSet, patch_name: String, commit_hash: String, repo: &str) -> Vec<Fingerprint> {
+pub fn winnow(
+    commit: PatchSet,
+    patch_name: String,
+    commit_hash: String,
+    repo: &str,
+) -> Vec<Fingerprint> {
     let mut hash_line_file = vec![];
     for patchfile in commit {
         let mut hash_line_hunk = vec![];
@@ -74,7 +79,12 @@ pub fn parse_patch(path: &str, repo: &str) -> Vec<Fingerprint> {
     // for (i, v) in commit_hash.unwrap().into_iter().enumerate() {
     //     a[i] = v;
     // }
-    winnow(patchset, path.to_owned(), commit_hash.unwrap().to_owned(), repo)
+    winnow(
+        patchset,
+        path.to_owned(),
+        commit_hash.unwrap().to_owned(),
+        repo,
+    )
 }
 
 fn add_file(incompletes: Vec<(u64, usize, usize)>, file: &str) -> Vec<(u64, usize, usize, String)> {
