@@ -7,6 +7,8 @@ use std::process::Command;
 use winnow::detector;
 use winnow::winnowing::{parse_patch, Fingerprint};
 
+use indicatif::ProgressIterator;
+
 struct Repo {
     name: String,
     path: String,
@@ -71,7 +73,7 @@ impl Repo {
     fn parse_patches(&self) -> Vec<Fingerprint> {
         // self.patches.into_iter().map(parse_patch).collect()
         let mut out = vec![];
-        for p in self.patches.to_owned() {
+        for p in self.patches.iter().progress() {
             out.append(&mut parse_patch(&p, &self.name));
         }
         out

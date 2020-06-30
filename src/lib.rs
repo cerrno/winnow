@@ -7,5 +7,16 @@
     missing_debug_implementations
 )]
 
+const DEBUG: bool = false;
+
+#[macro_use]
+macro_rules! dprintln {
+    ($($arg:tt)*) => {
+        if crate::DEBUG {
+            println!($($arg)*)
+        }
+    };
+}
+
 pub mod detector;
 pub mod winnowing;

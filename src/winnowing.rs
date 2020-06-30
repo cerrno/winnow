@@ -12,31 +12,33 @@ pub struct Fingerprint {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Location {
     pub repo: String,
-    pub commit: [u8; 20],
+    pub patch: String,
+    pub commit: String,
     pub file: String,
+    pub hunk: usize,
     pub line: usize,
 }
 
-pub fn winnow(commit: PatchSet, commit_hash: [u8; 20], repo: &str) -> Vec<Fingerprint> {
+pub fn winnow(commit: PatchSet, patch_name: String, commit_hash: String, repo: &str) -> Vec<Fingerprint> {
     let mut hash_line_file = vec![];
     for patchfile in commit {
-        let mut hash_and_line = vec![];
+        let mut hash_line_hunk = vec![];
         let file = &patchfile.target_file.clone();
-        for hunk in patchfile {
+        for (h_index, hunk) in patchfile.into_iter().enumerate() {
             for line in hunk.target_lines() {
-                hash_and_line.append(&mut winnow_line(line));
+                hash_line_hunk.append(&mut winnow_line(line, h_index));
             }
         }
-        let mut v = add_file(hash_and_line, file);
+        let mut v = add_file(hash_line_hunk, file);
         hash_line_file.append(&mut v);
     }
-    make_fingerprints(hash_line_file, commit_hash, repo.to_owned())
+    make_fingerprints(hash_line_file, patch_name, commit_hash, repo.to_owned())
 }
 
-fn winnow_line(line: Line) -> Vec<(u64, usize)> {
+fn winnow_line(line: Line, hunk_index: usize) -> Vec<(u64, usize, usize)> {
     let n = line.target_line_no.unwrap(); // should have target_line_no since it came from target_lines
     let hashes = winnow_str(&line.value, 10);
-    hashes.into_iter().map(|h| (h, n)).collect()
+    hashes.into_iter().map(|h| (h, n, hunk_index)).collect()
 }
 
 fn winnow_str(input: &str, window: u32) -> Vec<u64> {
@@ -49,14 +51,14 @@ fn winnow_str(input: &str, window: u32) -> Vec<u64> {
     ngram(hashes.into_iter(), window).map(select_hash).collect()
 }
 
-use std::num::ParseIntError;
+// use std::num::ParseIntError;
 
-fn decode_hex(s: &str) -> Result<Vec<u8>, ParseIntError> {
-    (0..s.len())
-        .step_by(2)
-        .map(|i| u8::from_str_radix(&s[i..i + 2], 16))
-        .collect()
-}
+// fn decode_hex(s: &str) -> Result<Vec<u8>, ParseIntError> {
+//     (0..s.len())
+//         .step_by(2)
+//         .map(|i| u8::from_str_radix(&s[i..i + 2], 16))
+//         .collect()
+// }
 
 pub fn parse_patch(path: &str, repo: &str) -> Vec<Fingerprint> {
     let patch = fs::read_to_string(path).unwrap();
@@ -66,36 +68,39 @@ pub fn parse_patch(path: &str, repo: &str) -> Vec<Fingerprint> {
         return vec![];
     }
     let commit_hash = patch.split_whitespace().nth(1);
-    println!("{}", commit_hash.unwrap());
-    let commit_hash = decode_hex(commit_hash.unwrap());
-    let mut a = [0; 20];
-    for (i, v) in commit_hash.unwrap().into_iter().enumerate() {
-        a[i] = v;
-    }
-    winnow(patchset, a, repo)
+    dprintln!("{}", commit_hash.unwrap());
+    // let commit_hash = decode_hex(commit_hash.unwrap());
+    // let mut a = [0; 20];
+    // for (i, v) in commit_hash.unwrap().into_iter().enumerate() {
+    //     a[i] = v;
+    // }
+    winnow(patchset, path.to_owned(), commit_hash.unwrap().to_owned(), repo)
 }
 
-fn add_file(incompletes: Vec<(u64, usize)>, file: &str) -> Vec<(u64, usize, String)> {
+fn add_file(incompletes: Vec<(u64, usize, usize)>, file: &str) -> Vec<(u64, usize, usize, String)> {
     incompletes
         .into_iter()
-        .map(|(hash, line)| (hash, line, file.to_owned()))
+        .map(|(hash, hunk_index, line)| (hash, hunk_index, line, file.to_owned()))
         .collect()
 }
 
 fn make_fingerprints(
-    incompletes: Vec<(u64, usize, String)>,
-    commit_hash: [u8; 20],
+    incompletes: Vec<(u64, usize, usize, String)>,
+    patch: String,
+    commit_hash: String,
     repo: String,
 ) -> Vec<Fingerprint> {
     incompletes
         .into_iter()
-        .map(|(hash, line, file)| Fingerprint {
+        .map(|(hash, hunk, line, file)| Fingerprint {
             hash,
             location: Location {
                 repo: repo.clone(),
-                commit: commit_hash,
-                line,
+                patch: patch.clone(),
+                commit: commit_hash.clone(),
                 file,
+                hunk,
+                line,
             },
         })
         .collect()

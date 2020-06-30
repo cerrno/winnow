@@ -1,5 +1,8 @@
 use crate::winnowing::{Fingerprint, Location};
 use std::collections::HashMap;
+use std::fs;
+use unidiff::PatchSet;
+use colored::*;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 struct DetectorPair<'a> {
@@ -11,8 +14,10 @@ struct DetectorPair<'a> {
 #[derive(Debug, PartialEq, Eq, Hash)]
 struct Document {
     repo: String,
-    commit: [u8; 20],
+    patch: String,
+    commit: String,
     file: String,
+    hunk_index: usize,
 }
 
 pub fn run(repo_map: HashMap<String, Vec<Fingerprint>>) {
@@ -23,8 +28,10 @@ pub fn run(repo_map: HashMap<String, Vec<Fingerprint>>) {
             doc_map
                 .entry(Document {
                     repo: repo.clone(),
-                    commit: f.location.commit,
+                    patch: f.location.patch.clone(),
+                    commit: f.location.commit.clone(),
                     file: f.location.file.clone(),
+                    hunk_index: f.location.hunk,
                 })
                 .or_insert_with(Vec::new)
                 .push(f);
@@ -52,9 +59,7 @@ pub fn run(repo_map: HashMap<String, Vec<Fingerprint>>) {
             let matched_fingerprints = inverted_index.get(&f.hash).unwrap();
             let popularity = matched_fingerprints
                 .iter()
-                .filter(|&match_fp| {
-                    match_fp.location.repo == *doc.repo && match_fp.location.file == *doc.file
-                })
+                .filter(|&match_fp| match_fp.location.repo != *doc.repo)
                 .count();
             // decide if this is an interesting case or not
             if popularity > 0 && popularity < 1000 {
@@ -74,7 +79,7 @@ pub fn run(repo_map: HashMap<String, Vec<Fingerprint>>) {
     for (i, doc1) in documents.clone().enumerate() {
         for doc2 in documents.nth(i + 1).iter() {
             // consider pair (doc1, doc2)
-            println!("({:x?}, {:x?})\n", doc1, doc2);
+            dprintln!("({:x?}\n{:x?})\n", doc1, doc2);
             // matched fingerprints
             let mut fingerprints: Vec<Fingerprint> = vec![];
             // get this doc's fingerprints and look them up in the index
@@ -85,6 +90,7 @@ pub fn run(repo_map: HashMap<String, Vec<Fingerprint>>) {
                     .iter()
                     .cloned()
                     .filter(|fp| from_same_doc(doc2, fp))
+                    .filter(|fp| doc1.repo != fp.location.repo)
                     .collect();
                 fingerprints.append(&mut match_fingerprints);
             }
@@ -99,8 +105,56 @@ pub fn run(repo_map: HashMap<String, Vec<Fingerprint>>) {
     detected_pairs.sort_by(|a, b| b.fingerprints.len().cmp(&a.fingerprints.len()));
     println!("\nDETECTED PAIRS: \n\n");
     for p in detected_pairs.iter().take(10) {
-        println!("{:x?}\n", p);
+        // println!("{:x?}\n", p);
+        show_pair(p).unwrap();
+        break;
     }
+}
+
+fn show_pair(pair: &'_ DetectorPair<'_>) -> std::io::Result<()> {
+    let p1 = fs::read_to_string(&pair.a.patch)?;
+    let p2 = fs::read_to_string(&pair.b.patch)?;
+    let mut d1 = PatchSet::new();
+    d1.parse(&p1).unwrap();
+    let mut d2 = PatchSet::new();
+    d2.parse(&p2).unwrap();
+
+    println!(
+        "{}",
+        d1.into_iter()
+            .find(|d| d.target_file == pair.a.file)
+            .expect("couldn't find file")
+            .to_string().green()
+    );
+    println!("{}", pair.a.hunk_index);
+    println!(
+        "{}",
+        d2.into_iter()
+            .find(|d| d.target_file == pair.b.file)
+            .expect("couldn't find file")
+            .to_string().red()
+    );
+    println!("{}", pair.b.hunk_index);
+    // println!(
+    //     "{}",
+    //     d1.into_iter()
+    //         .find(|d| d.target_file == pair.a.file)
+    //         .expect("couldn't find file")
+    //         .into_iter()
+    //         .nth(pair.a.hunk_index)
+    //         .expect("couldn't find hunk")
+    //         .to_string().green()
+    // );
+    // println!(
+    //     "{}",
+    //     d2.into_iter()
+    //         .find(|d| d.target_file == pair.b.file)
+    //         .unwrap()
+    //         .into_iter()
+    //         .nth(pair.b.hunk_index)
+    //         .unwrap().to_string().red()
+    // );
+    Ok(())
 }
 
 fn from_same_doc(d: &Document, f: &Fingerprint) -> bool {
