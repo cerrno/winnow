@@ -93,7 +93,9 @@ Definitions:
 > for windows of characters in the resulting file, preserving the lowest hash
 > values as the file’s fingerprint" [Engels et al. 2007][engels-paper]
 
-Todo: check out https://blog.tonari.no/why-we-love-rust.
+### Notes
+- check out https://blog.tonari.no/why-we-love-rust
+- Btree Map for winnowing?
 
 [moss]: https://theory.stanford.edu/~aiken/moss/
 [engels-paper]: https://dl.acm.org/doi/pdf/10.1145/1227310.1227324
